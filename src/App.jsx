@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+
+// !! PASTE YOUR GOOGLE OAUTH CLIENT ID BETWEEN THE QUOTES BELOW !!
 const CLIENT_ID = "996037648605-gmr9egoq0tsov0bmegl502ghghn9bslc.apps.googleusercontent.com";
+
 const CALENDARS = [
   { id: "primary", name: "Personal", color: "#4285F4" },
   { id: "work", name: "Work", color: "#0F9D58" },
@@ -177,60 +180,65 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
     setChatLoading(false);
   };
 
+  // ── Real Google Calendar integration ──────────────────────────────────────
   const handleConfirm = async () => {
-  setStage("loading");
-  setLoadingMsg("Connecting to Google Calendar…");
-  try {
-    const token = await new Promise((resolve) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: "https://www.googleapis.com/auth/calendar.events",
-        callback: (response) => resolve(response.access_token),
+    setStage("loading");
+    setLoadingMsg("Connecting to Google Calendar…");
+    try {
+      // Ask Google for an access token (pops up sign-in if needed)
+      const token = await new Promise((resolve, reject) => {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: "https://www.googleapis.com/auth/calendar.events",
+          callback: (response) => {
+            if (response.error) reject(response.error);
+            else resolve(response.access_token);
+          },
+        });
+        client.requestAccessToken();
       });
-      client.requestAccessToken();
-    });
 
-    setLoadingMsg("Adding to Google Calendar…");
+      setLoadingMsg("Adding to Google Calendar…");
 
-    const calendarEvent = {
-      summary: event.title,
-      location: event.location,
-      description: event.description,
-      start: {
-        dateTime: `${event.date}T${event.startTime}:00`,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      end: {
-        dateTime: `${event.date}T${event.endTime}:00`,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-    };
-
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      const calendarEvent = {
+        summary: event.title,
+        location: event.location,
+        description: event.description,
+        start: {
+          dateTime: `${event.date}T${event.startTime}:00`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
-        body: JSON.stringify(calendarEvent),
-      }
-    );
+        end: {
+          dateTime: `${event.date}T${event.endTime}:00`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      };
 
-    if (res.ok) {
-      setStage("success");
-    } else {
-      const err = await res.json();
-      alert("Calendar error: " + err.error.message);
+      const res = await fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(calendarEvent),
+        }
+      );
+
+      if (res.ok) {
+        setStage("success");
+      } else {
+        const err = await res.json();
+        alert("Calendar error: " + err.error.message);
+        setStage("preview");
+      }
+    } catch (e) {
+      alert("Could not connect to Google Calendar. Please try again.");
       setStage("preview");
     }
-  } catch (e) {
-    alert("Could not connect to Google Calendar.");
-    setStage("preview");
-  }
-};
-
+  };
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleReset = () => {
     setStage("input");
@@ -317,10 +325,9 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
         boxShadow: "0 20px 70px #00000055",
       }}>
 
-        {/* ── INPUT ── */}
+        {/* INPUT */}
         {stage === "input" && (
           <div className="fu">
-            {/* Image section */}
             <div style={{ padding: "20px 20px 0" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <span style={{ fontSize: 10.5, fontWeight: 700, color: "#35334a", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -341,9 +348,7 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
                   <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
                   <div className="drop-z" onClick={() => cameraRef.current?.click()}>
                     <div style={{ fontSize: 32, marginBottom: 8 }}>📸</div>
-                    <p style={{ color: "#5e5c70", fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>
-                      Snap a flyer, invite, or poster
-                    </p>
+                    <p style={{ color: "#5e5c70", fontSize: 13, marginBottom: 14, lineHeight: 1.5 }}>Snap a flyer, invite, or poster</p>
                     <span className="btn-sm"><IconCamera /> Open Camera</span>
                   </div>
                 </>
@@ -369,20 +374,14 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
               )}
             </div>
 
-            {/* Divider */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 20px 14px" }}>
               <div style={{ flex: 1, height: 1, background: "#18172a" }} />
               <span style={{ fontSize: 10, color: "#2c2a3e", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" }}>or describe it</span>
               <div style={{ flex: 1, height: 1, background: "#18172a" }} />
             </div>
 
-            {/* Chat section */}
             <div style={{ padding: "0 20px 20px" }}>
-              <div style={{
-                height: 210, overflowY: "auto",
-                display: "flex", flexDirection: "column", gap: 9,
-                marginBottom: 10, paddingRight: 2,
-              }}>
+              <div style={{ height: 210, overflowY: "auto", display: "flex", flexDirection: "column", gap: 9, marginBottom: 10, paddingRight: 2 }}>
                 {chatMessages.map((msg, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start" }}>
                     <div
@@ -432,7 +431,7 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
           </div>
         )}
 
-        {/* ── LOADING ── */}
+        {/* LOADING */}
         {stage === "loading" && (
           <div style={{ padding: "70px 24px", textAlign: "center" }} className="fu">
             <div style={{
@@ -445,7 +444,7 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
           </div>
         )}
 
-        {/* ── PREVIEW ── */}
+        {/* PREVIEW */}
         {stage === "preview" && (
           <div className="fu">
             <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #18172a", display: "flex", alignItems: "center", gap: 8 }}>
@@ -534,7 +533,7 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
           </div>
         )}
 
-        {/* ── SUCCESS ── */}
+        {/* SUCCESS */}
         {stage === "success" && (
           <div style={{ padding: "58px 24px", textAlign: "center" }} className="fu">
             <div className="pi" style={{
@@ -547,9 +546,7 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
             </div>
             <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Added!</h2>
             <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{event.title}</p>
-            <p style={{ fontSize: 13, color: "#45435a", marginBottom: 6 }}>
-              {event.date} · {event.startTime}–{event.endTime}
-            </p>
+            <p style={{ fontSize: 13, color: "#45435a", marginBottom: 6 }}>{event.date} · {event.startTime}–{event.endTime}</p>
             <div style={{ marginBottom: 30 }}>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
