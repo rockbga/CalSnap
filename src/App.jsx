@@ -18,7 +18,10 @@ const INITIAL_EVENT = {
 async function callClaude(messages, systemPrompt) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" 
+               "x-api-key": "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",
+               "anthropic-version": "2023-06-01",
+             },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
