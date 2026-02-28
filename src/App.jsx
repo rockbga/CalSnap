@@ -18,11 +18,11 @@ const INITIAL_EVENT = {
 async function callClaude(messages, systemPrompt) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-headers: {
-  "Content-Type": "application/json",
-  "x-api-key": import.meta.env.VITE_ANTHROPIC_KEY,
-  "anthropic-version": "2023-06-01",
-},
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": import.meta.env.VITE_ANTHROPIC_KEY,
+      "anthropic-version": "2023-06-01",
+    },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
@@ -184,12 +184,10 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
     setChatLoading(false);
   };
 
-  // ── Real Google Calendar integration ──────────────────────────────────────
   const handleConfirm = async () => {
     setStage("loading");
     setLoadingMsg("Connecting to Google Calendar…");
     try {
-      // Ask Google for an access token (pops up sign-in if needed)
       const token = await new Promise((resolve, reject) => {
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: CLIENT_ID,
@@ -242,7 +240,6 @@ Today: ${TODAY}. Assume year 2026 if unspecified. If no end time, add 1 hour to 
       setStage("preview");
     }
   };
-  // ──────────────────────────────────────────────────────────────────────────
 
   const handleReset = () => {
     setStage("input");
