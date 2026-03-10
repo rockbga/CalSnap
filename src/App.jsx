@@ -16,7 +16,7 @@ const INITIAL_EVENT = {
 };
 
 async function callClaude(messages, systemPrompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("/api/claude", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
